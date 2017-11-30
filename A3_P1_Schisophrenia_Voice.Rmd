@@ -4,6 +4,9 @@ author: "Dana Jensen"
 date: "October 12, 2017"
 output: html_document
 ---
+---
+                          "INCOMPLETE"
+---
 ```{r setup, include=FALSE}
 #prelude
 knitr::opts_chunk$set(echo = TRUE)
@@ -28,8 +31,8 @@ Can you characterize voice in schizophrenia as acoustically different? Report th
 # Trapping Time - how long you are 'trapped' in the state (verticle)
 
 ##1. In the course of this assignment you have to first select one datafile and figure out how to:
+
 ##Extract "standard" descriptors of pitch: Mean, standard deviation, range
-##Extract less "standard" descriptors of pitch you can think of (e.g. median, iqr, mean absoluted deviation, coefficient of variation)
 
 summary.list = function(x){
   result<-c(
@@ -57,8 +60,8 @@ summary.list(p)
 par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,  radiussample = 40, normalize = 0,  rescale = 0,  mindiagline = 2,  minvertline = 2,  tw = 0,  whiteline = FALSE,  recpt = FALSE,  fnnpercent = 10,  typeami = 'mindip')
 
 #optimized parameters
-#~~~~~~ERROR
-try(optimizeParam(p['f0'], p['f0'], par, min.rec = 1, max.rec = 10))
+#~~~~~~ERROR~~~~~~~~
+try(optimizeParam(p$f0, p$f0, par, min.rec = 1, max.rec = 10))
 
 #rqa
 rqa_analysis= function(x)(  
@@ -70,6 +73,7 @@ rqa_analysis(p)
 ##2. Second you will have to turn the code into a function and loop through all the files (or even better use apply/sapply/lapply)
 ##- Remember to extract the relevant information from the file names (Participant, Diagnosis, Trial, Study)
 
+rm(dframe)
 filename = NULL
 temp = NULL
 id =  NULL
@@ -90,16 +94,17 @@ radius= NULL
 delay= NULL
 embed= NULL
 n = 1
+
 for (file in pitch_list){
-  #practical information
-  filename = file
+  ##practical information
+  filename[n] = file
   i = read_delim(file, delim = "\t")
   temp[n] = paste(folder, i, sep = "")
   id[n] =  str_extract(str_extract(file, "S\\d+"), "\\d+")
   study[n] = str_extract(str_extract(file,"\\S\\w{4}\\d{1}"), "\\d")
   diagnosis[n] = str_extract(str_extract(file, "D\\d"), "\\d")
   trial[n] = str_extract(str_extract(file, "T\\d+"), "\\d+")
-  #some numbers
+  ##some numbers
   mean[n]= mean(i$f0)
   median[n]= median(i$f0)
   max.min[n]= range(i$f0)
@@ -110,34 +115,39 @@ for (file in pitch_list){
   coeff.variation.prcnt[n]= sd(i$f0)/mean(i$f0)*100
   std.error[n]= sd(i$f0)/sqrt(length(i))
   quantile[n]= quantile(i$f0)
-   n = n+1
-}
-
-dframe<- data.frame(filename, id, study, diagnosis, trial, mean, median, range, variance, std.dev, IQR, coeff.variation.prcnt, std.error, quantile)
-
-#and now for something completely different...
-#~~~~~~~ERROR
-V = try(optimizeParam(p['f0'], p['f0'], par, min.rec = 2, max.rec = 10))
-if (length(V)>1){
-  radius[n]= V$radius
-  delay[n]= V$delay
-  embed[n]= V$emddim
+  #~~~~~ ERROR: all NAs ~~~~
+  V = try(optimizeParam(i$f0, i$f0, par, min.rec = 2, max.rec = 10))
+  if (length(V)>1){
+    radius[n] = V$radius
+    delay[n] = V$delay
+    embed[n] = V$emddim
   }else{
-  radius[n] = NA
-  delay[n] = NA
-  embed[n] = NA}
+    radius[n] = NA
+    delay[n] = NA
+    embed[n] = NA
+  n = n+1
+}}
+
+dframe<- data.frame(filename, id, study, diagnosis, trial, mean, median, range, variance, std.dev, IQR, coeff.variation.prcnt, std.error, quantile, radius, delay, embed)
+
+write.csv(dframe, "schizoData.csv")
 
 ##3. Make one model per acoustic feature and test whether you can observe significant difference due to Diagnosis. Tip: Which other fixed factors should you control for (that is, include in the model)? Which random ones?
 
-model1 = glmer(diagnosis ~ scale(range) + (1+trial|id), data = dframe, family = 'binomial')
-summary(model1)
+m1 = glmer(diagnosis ~ scale(range) + (1|trial)+(1|id), data = dframe, family = 'binomial')
+summary(m1)
 
-model2 = glmer(diagnosis ~ scale(variance) + (1+trial|id), data = dframe, family = 'binomial')
-summary(model2)
+m2 = glmer(diagnosis ~ scale(variance) + (1|trial)+(1|id), data = dframe, family = 'binomial')
+summary(m2)
+
+m3 = glmer(diagnosis ~ scale(mean) + (1|trial)+(1|id), data = dframe, family = 'binomial')
+summary(m3)
+
 ##3a. Is study a significant predictor in these models? What should you infer from this? Does study interact with diagnosis? What should you infer from this?
 
-model4 = glmer(diagnosis ~ study + (1+trial|id), data = dframe, family = 'binomial')
-summary(model4)
+m4 = glmer(diagnosis ~ study + (1|trial) + (1|id), data = dframe, family = 'binomial')
+summary(m4)
+
 ##Bonus points: cross-validate the model and report the betas and standard errors from all rounds to get an idea of how robust the estimates are. 
 
 ##4. Bonus Question: Compare effect size of diagnosis across the different measures. Which measure seems most sensitive?
