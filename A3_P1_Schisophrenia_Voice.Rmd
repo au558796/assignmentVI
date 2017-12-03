@@ -12,7 +12,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 path<-("C:/Users/Dana/Desktop/METHODS III/AssignmentVI")
 setwd(path)
-library(pacman)
+library(pacman, Pastecs, stats, lsr, nonlinearTseries, crqa, readr, stringr, lmerTest)
 p_load(Pastecs, stats, lsr, nonlinearTseries, crqa, readr, stringr, lmerTest)
 folder = file.path(path)
 pitch_list<- list.files(path = folder, recursive = TRUE, pattern = "*f0.txt")
@@ -134,19 +134,19 @@ write.csv(dframe, "schizoData.csv")
 
 ##3. Make one model per acoustic feature and test whether you can observe significant difference due to Diagnosis. Tip: Which other fixed factors should you control for (that is, include in the model)? Which random ones?
 
-m1 = glmer(diagnosis ~ scale(range) + (1|trial)+(1|id), data = dframe, family = 'binomial')
+m1 = glmer(scale(range) ~ diagnosis + trial +(1|study) + (1|id), data = dframe, family = 'binomial')
 summary(m1)
 
-m2 = glmer(diagnosis ~ scale(variance) + (1|trial)+(1|id), data = dframe, family = 'binomial')
+m2 = glmer(scale(variance) ~ diagnosis + trial + (1|study) + (1|id), data = dframe, family = 'binomial')
 summary(m2)
 
-m3 = glmer(diagnosis ~ scale(mean) + (1|trial)+(1|id), data = dframe, family = 'binomial')
+m3 = glmer(scale(mean) ~ diagnosis + trial + (1|study) + (1|id), data = dframe, family = 'binomial')
 summary(m3)
 
-##3a. Is study a significant predictor in these models? What should you infer from this? Does study interact with diagnosis? What should you infer from this?
-
-m4 = glmer(diagnosis ~ study + (1|trial) + (1|id), data = dframe, family = 'binomial')
+m4 = glmer(scale(std.error) ~ diagnosis + trial + (1|study) + (1|id), data = dframe, family = 'binomial')
 summary(m4)
+
+##3a. Is study a significant predictor in these models? What should you infer from this? Does study interact with diagnosis? What should you infer from this?
 
 ##Bonus points: cross-validate the model and report the betas and standard errors from all rounds to get an idea of how robust the estimates are. 
 
