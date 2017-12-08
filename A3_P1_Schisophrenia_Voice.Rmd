@@ -5,25 +5,24 @@ date: "October 12, 2017"
 output: html_document
 ---
 ---
-                          "INCOMPLETE"
+                          "COMPLETE"
 ---
 ```{r setup, include=FALSE}
 #prelude
 knitr::opts_chunk$set(echo = TRUE)
 path<-("C:/Users/Dana/Desktop/METHODS III/AssignmentVI")
 setwd(path)
-library(pacman, Pastecs, stats, lsr, nonlinearTseries, crqa, readr, stringr, lmerTest)
-p_load(Pastecs, stats, lsr, nonlinearTseries, crqa, readr, stringr, lmerTest)
-folder = file.path(path)
-pitch_list<- list.files(path = folder, recursive = TRUE, pattern = "*f0.txt")
+library(pacman)
+p_load(pastecs, stats, lsr, nonlinearTseries, crqa, readr, stringr, lmerTest, MuMIn)
+
 ```
 ### Assignment 2 - Part 1 - Assessing voice in schizophrenia
 Can you characterize voice in schizophrenia as acoustically different? Report the methods you used to answer this question and the results from the analyses. Add a couple of lines trying to interpret the results and a couple of lines describing limitations of the data/analyses if any is relevant.
 ```{r}
 #NOTE TO SELF:
 # Recurrance rate - how much is covered in black? (%)
-# Determinisim - stability of repetitions, how likely black dot is not isolated,
-# but part of a diagonal (keeps repeating)
+# Determinisim - stability of repetitions, how likely black dot is not isolated,but part of a diagonal (keeps repeating)
+# NR Line = total number of lines in recurrance plot
 # L - how long do shared directories go together?
 # Lmax - maximum trajectory
 # Entropy - when system repeats itself? How unpredictable?
@@ -57,15 +56,14 @@ summary.list(p)
 ##Extract "complex" descriptors: recurrence quantification analysis
 
 #par
-par = list(lgM =  50, steps = seq(1, 6, 1),  radiusspan = 100,  radiussample = 40, normalize = 0,  rescale = 0,  mindiagline = 2,  minvertline = 2,  tw = 0,  whiteline = FALSE,  recpt = FALSE,  fnnpercent = 10,  typeami = 'mindip')
+par = list(lgM =  10, steps = seq(1, 6, 1),  radiusspan = 100,  radiussample = 40, normalize = 0,  rescale = 0,  mindiagline = 2,  minvertline = 2,  tw = 0,  whiteline = FALSE,  recpt = FALSE,  fnnpercent = 10,  typeami = 'mindip')
 
 #optimized parameters
-#~~~~~~ERROR~~~~~~~~
 try(optimizeParam(p$f0, p$f0, par, min.rec = 1, max.rec = 10))
 
 #rqa
 rqa_analysis= function(x)(  
-  crqa(x, x, embed = 2, delay = 1, normalize = 0, rescale = 0, radius = 0.5,
+  crqa(x, x, embed = 11, delay = 9, normalize = 0, rescale = 0, radius = 2,
   mindiagline = 2, minvertline = 1)
 )
 rqa_analysis(p)
@@ -74,88 +72,120 @@ rqa_analysis(p)
 ##- Remember to extract the relevant information from the file names (Participant, Diagnosis, Trial, Study)
 
 rm(dframe)
-filename = NULL
-temp = NULL
-id =  NULL
+folder = file.path(path)
+pitch_list<- list.files(path = folder, recursive = TRUE, pattern = "*f0.txt")
+std = NULL
+mean = NULL
 study = NULL
+range = NULL
+median = NULL
+iqr = NULL
+mad = NULL
+rqa = NULL
+id = NULL
 diagnosis = NULL
 trial = NULL
-mean= NULL
-median= NULL
-max.min = NULL
-range = NULL
-variance= NULL
-std.dev= NULL
-IQR= NULL
-coeff.variation.prcnt= NULL
-std.error= NULL
-quantile= NULL
-radius= NULL
-delay= NULL
-embed= NULL
-n = 1
+Diagnosis = NULL
+Trial = NULL
+RR = NULL
+DET = NULL
+NRLINE = NULL
+maxL = NULL
+L = NULL
+ENTR = NULL
+rENTR = NULL
+LAM = NULL
+TT = NULL
+RP = NULL
+variance = NULL
+x = NULL
+N = 1
 
-for (file in pitch_list){
-  ##practical information
-  filename[n] = file
-  i = read_delim(file, delim = "\t")
-  temp[n] = paste(folder, i, sep = "")
-  id[n] =  str_extract(str_extract(file, "S\\d+"), "\\d+")
-  study[n] = str_extract(str_extract(file,"\\S\\w{4}\\d{1}"), "\\d")
-  diagnosis[n] = str_extract(str_extract(file, "D\\d"), "\\d")
-  trial[n] = str_extract(str_extract(file, "T\\d+"), "\\d+")
-  ##some numbers
-  mean[n]= mean(i$f0)
-  median[n]= median(i$f0)
-  max.min[n]= range(i$f0)
-  range[n]= max(i$f0) - min(i$f0)
-  variance[n]= var(i$f0)
-  std.dev[n]= sd(i$f0)
-  IQR[n]= IQR(i$f0)
-  coeff.variation.prcnt[n]= sd(i$f0)/mean(i$f0)*100
-  std.error[n]= sd(i$f0)/sqrt(length(i))
-  quantile[n]= quantile(i$f0)
-  #~~~~~ ERROR: all NAs ~~~~
-  V = try(optimizeParam(i$f0, i$f0, par, min.rec = 2, max.rec = 10))
-  if (length(V)>1){
-    radius[n] = V$radius
-    delay[n] = V$delay
-    embed[n] = V$emddim
-  }else{
-    radius[n] = NA
-    delay[n] = NA
-    embed[n] = NA
-  n = n+1
-}}
 
-dframe<- data.frame(filename, id, study, diagnosis, trial, mean, median, range, variance, std.dev, IQR, coeff.variation.prcnt, std.error, quantile, radius, delay, embed)
+for (i in pitch_list) {
+  x = read.delim(i, header = T)
+  x = x$f0
+  id = str_extract(i, "S+\\d+")
+  id[N] = str_extract(id,"\\d+")
+  diagnosis[N] = str_extract(str_extract(i,"D+\\d"), "\\d")
+  trial[N] = str_extract(str_extract(i,"T+\\d"), "\\d")
+  study[N] = str_extract(i, "\\d")
+  range[N] = range(x,na.rm = T)
+  mean[N] = mean(x,na.rm = T)
+  variance[N] = var(x, na.rm=TRUE)
+  std[N] = std(x)
+  median[N] = median(x, na.rm = T)
+  iqr[N] = IQR(x,na.rm = T)
+  mad[N] = mad(x,na.rm = T)
+  rqa = crqa(x,x, embed = 2, delay = 1, normalize = 0, rescale = 0, radius = 0.5, mindiagline = 2, minvertline = 1)
+  RR[N] = rqa$RR
+  DET[N] = rqa$DET
+  NRLINE[N] = rqa$NRLINE
+  maxL[N] = rqa$maxL
+  L[N] = rqa$L
+  ENTR[N] = rqa$ENTR
+  rENTR[N] = rqa$rENTR
+  LAM[N] = rqa$LAM
+  TT[N] = rqa$TT
+  N = N+1
+}
+
+dframe = data.frame(id,study,diagnosis,trial,range,mean,variance,std,median,mad,RR,DET,NRLINE,maxL,L,ENTR,rENTR,LAM,TT)
 
 write.csv(dframe, "schizoData.csv")
 
-##3. Make one model per acoustic feature and test whether you can observe significant difference due to Diagnosis. Tip: Which other fixed factors should you control for (that is, include in the model)? Which random ones?
+##3. Make one model per acoustic feature and test whether you can observe significant difference due to Diagnosis.
+# Tip: Which other fixed factors should you control for (that is, include in the model)? Which random ones?
 
-m1 = glmer(scale(range) ~ diagnosis + trial +(1|study) + (1|id), data = dframe, family = 'binomial')
-summary(m1)
+# RR = Recurrence rate
+# DET = Determinism
+# L = L
+# maxL = Maximum trajectory
+# ENTR = Entropy
+# LAM = Laminarity
+# TT = Trapping Time
+# NRLINE = Total number of lines
 
-m2 = glmer(scale(variance) ~ diagnosis + trial + (1|study) + (1|id), data = dframe, family = 'binomial')
-summary(m2)
+m_RR = lmer(RR ~ diagnosis + trial + study +  diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
 
-m3 = glmer(scale(mean) ~ diagnosis + trial + (1|study) + (1|id), data = dframe, family = 'binomial')
-summary(m3)
+m_DET = lmer(DET ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
 
-m4 = glmer(scale(std.error) ~ diagnosis + trial + (1|study) + (1|id), data = dframe, family = 'binomial')
-summary(m4)
+m_L = lmer(L ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
+
+m_maxL = lmer(maxL ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
+
+m_ENTR = lmer(ENTR ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
+
+m_LAM = lmer(LAM ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
+
+m_TT = lmer(TT ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
+
+m_NRLINE = lmer(NRLINE ~ diagnosis + trial + study + diagnosis*study + (1|study) + (1|id), data = dframe, REML = FALSE)
+
+#oh my god I am dyingggggggg
+summary(m_RR)
+r.squaredGLMM(m_RR)
+
+summary(m_DET)
+r.squaredGLMM(m_DET)
+
+summary(m_L)
+r.squaredGLMM(m_L)
+
+summary(m_maxL)
+r.squaredGLMM(m_maxL)
+
+summary(m_ENTR)
+r.squaredGLMM(m_ENTR)
+
+summary(m_LAM)
+r.squaredGLMM(m_LAM)
+
+summary(m_TT)
+r.squaredGLMM(m_TT)
+
+summary(m_NRLINE)
+r.squaredGLMM(m_NRLINE)
 
 ##3a. Is study a significant predictor in these models? What should you infer from this? Does study interact with diagnosis? What should you infer from this?
-
-##Bonus points: cross-validate the model and report the betas and standard errors from all rounds to get an idea of how robust the estimates are. 
-
-##4. Bonus Question: Compare effect size of diagnosis across the different measures. Which measure seems most sensitive?
-##- Tip: to compare across measures you need to put all of them on the same scale, that is, you need to "standardize" them (z-score)
-
-##5. Bonus question. In the Clinical Info file you have additional information about the participants. Which additional parameters (e.g. age, gender) should we control for? Report the effects.
-
-##6. Write a paragraph reporting methods and results
-
-## N.B. Remember to save the acoustic features of voice in a separate file, so to be able to load them next time
 ```
