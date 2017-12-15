@@ -69,7 +69,7 @@ rqa_analysis= function(x)(
 rqa_analysis(p)
 
 ##2. Second you will have to turn the code into a function and loop through all the files (or even better use apply/sapply/lapply)
-##- Remember to extract the relevant information from the file names (Participant, Diagnosis, Trial, Study)
+##-Remember to extract the relevant information from the file names (Participant, Diagnosis, Trial, Study)
 
 rm(dframe)
 folder = file.path(path)
