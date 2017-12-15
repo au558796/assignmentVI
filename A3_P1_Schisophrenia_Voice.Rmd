@@ -8,7 +8,7 @@ output: html_document
                           "COMPLETE"
 ---
 ```{r setup, include=FALSE}
-#prelude
+#preamble
 knitr::opts_chunk$set(echo = TRUE)
 path<-("C:/Users/Dana/Desktop/METHODS III/AssignmentVI")
 setwd(path)
